@@ -1,0 +1,5 @@
+app:
+  name: "golang-blog"
+server:
+  port: "8080"
+  mode: "debug"
