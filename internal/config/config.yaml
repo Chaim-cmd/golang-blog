@@ -1,0 +1,15 @@
+app:
+  name: "golang-blog"
+server:
+  port: "8080"
+  mode: "debug"
+database:
+  driver: mysql
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: qwq512369
+  dbname: golang_blog
+  max_open_conns: 20
+  max_idle_conns: 10
+  conn_max_lifetime: 300

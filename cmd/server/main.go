@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/Chaim-cmd/golang-blog/internal/config"
+	"github.com/Chaim-cmd/golang-blog/internal/database"
 	"github.com/Chaim-cmd/golang-blog/internal/router"
 )
 
@@ -13,6 +14,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("启动失败：%v", err)
 	}
+	db, err := database.InitMySQL(cfg.Database)
+	if err != nil {
+		log.Fatalf("数据库初始化失败：%v", err)
+	}
+	_ = db
+
 	r := router.NewRouter(cfg)
 
 	log.Printf("[%s] listening on %s", cfg.App.Name, cfg.Server.Port)

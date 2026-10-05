@@ -16,6 +16,19 @@ type Config struct {
 		Port string `mapstructure:"port"`
 		Mode string `mapstructure:"mode"`
 	} `mapstructure:"server"` //修复拼写 mapstructure
+	Database DatabaseConfig `mapstructure:"database"`
+}
+
+type DatabaseConfig struct {
+	Driver          string `mapstructure:"driver"`
+	Host            string `mapstructure:"Host"`
+	Port            int    `mapstructure:"port"`
+	Username        string `mapstructure:"username"`
+	Password        string `mapstructure:"password"`
+	DBName          string `mapstructure:"dbname"`
+	MaxOpenConns    int    `mapstructure:"max_open_conns"`
+	MaxIdleConns    int    `mapstructure:"max_idle_conns"`
+	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"`
 }
 
 func Load(path string) (*Config, error) {
