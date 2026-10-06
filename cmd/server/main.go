@@ -20,7 +20,7 @@ func main() {
 	}
 	_ = db
 
-	r := router.NewRouter(cfg)
+	r := router.NewRouter(cfg, db)
 
 	log.Printf("[%s] listening on %s", cfg.App.Name, cfg.Server.Port)
 
