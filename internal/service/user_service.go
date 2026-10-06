@@ -42,8 +42,8 @@ func (s *UserService) Register(username, email, password string) (*model.User, e
 		PasswordHash: string(hash),
 		Nickname:     username,
 	}
-	if err := s.db.Create(u); err != nil {
-		return nil, err.Error
+	if err := s.db.Create(u).Error; err != nil {
+		return nil, err
 	}
 
 	return u, nil

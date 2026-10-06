@@ -69,6 +69,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
+			return
 		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "登录失败",
