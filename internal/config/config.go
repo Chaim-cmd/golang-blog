@@ -17,6 +17,7 @@ type Config struct {
 		Mode string `mapstructure:"mode"`
 	} `mapstructure:"server"` //修复拼写 mapstructure
 	Database DatabaseConfig `mapstructure:"database"`
+	JWT      JWTConfig      `mapstructure:"jwt"`
 }
 
 type DatabaseConfig struct {
@@ -29,6 +30,10 @@ type DatabaseConfig struct {
 	MaxOpenConns    int    `mapstructure:"max_open_conns"`
 	MaxIdleConns    int    `mapstructure:"max_idle_conns"`
 	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"`
+}
+type JWTConfig struct {
+	Secret      string `mapstructure:"secret"`
+	ExpireHours int    `mapstructure:"expire_hours"`
 }
 
 func Load(path string) (*Config, error) {

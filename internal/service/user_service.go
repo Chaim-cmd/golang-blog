@@ -67,3 +67,11 @@ func (s *UserService) Login(username, password string) (*model.User, error) {
 	return &u, nil
 
 }
+
+func (s *UserService) GetByID(id uint) (*model.User, error) {
+	var u model.User
+	if err := s.db.First(&u, id).Error; err != nil {
+		return nil, err
+	}
+	return &u, nil
+}

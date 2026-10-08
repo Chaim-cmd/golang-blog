@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chaim-cmd/golang-blog/internal/config"
 	"github.com/Chaim-cmd/golang-blog/internal/handler"
+	"github.com/Chaim-cmd/golang-blog/internal/middleware"
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -16,7 +17,8 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	svc := service.NewUserService(db)
-	h := handler.NewUserHandler(svc)
+	jwtSvc := service.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)
+	h := handler.NewUserHandler(svc, jwtSvc)
 
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
@@ -28,6 +30,12 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	{
 		api.POST("/register", h.Register)
 		api.POST("/login", h.Login)
+
+	}
+	protected := api.Group("")
+	protected.Use(middleware.AuthMiddleware([]byte(cfg.JWT.Secret)))
+	{
+		protected.GET("/me", h.Me)
 	}
 	return r
 }

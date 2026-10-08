@@ -9,12 +9,14 @@ import (
 )
 
 type UserHandler struct {
-	svc *service.UserService
+	svc    *service.UserService
+	jwtSvc *service.JWTService
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, jwtSvc *service.JWTService) *UserHandler {
 	return &UserHandler{
-		svc: svc,
+		svc:    svc,
+		jwtSvc: jwtSvc,
 	}
 }
 
@@ -76,10 +78,35 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		})
 		return
 	}
+	token, err := h.jwtSvc.GenerateToken(u.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "签发 token失败",
+		})
+		return
+	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"message":  "登录成功",
+		"token":    token,
 		"user_id":  u.ID,
 		"username": u.Username,
 	})
 
+}
+
+func (h *UserHandler) Me(ctx *gin.Context) {
+	//user_id 是 authMiddleware 验签通过后塞进上下文的
+	userID := ctx.GetUint("user_id")
+
+	u, err := h.svc.GetByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"error": "用户不存在",
+		})
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"id":       u.ID,
+		"username": u.Username,
+		"email":    u.Email,
+	})
 }
