@@ -18,6 +18,7 @@ type Config struct {
 	} `mapstructure:"server"` //修复拼写 mapstructure
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	Log      LogConfig      `mapstructure:"log"`
 }
 
 type DatabaseConfig struct {
@@ -34,6 +35,9 @@ type DatabaseConfig struct {
 type JWTConfig struct {
 	Secret      string `mapstructure:"secret"`
 	ExpireHours int    `mapstructure:"expire_hours"`
+}
+type LogConfig struct {
+	Level string `mapstructureL:"level"`
 }
 
 func Load(path string) (*Config, error) {

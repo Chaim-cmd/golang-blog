@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Chaim-cmd/golang-blog/internal/response"
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -34,24 +35,19 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 	var req RegisterRequest
 	//ShouldBindJSON 解析请求体 JSON 并执行binding 校验
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "参数不合法:" + err.Error()})
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "参数错误: ...")
 		return
 	}
 	u, err := h.svc.Register(req.Username, req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrUserExists) {
-			ctx.JSON(http.StatusConflict, gin.H{
-				"error": err.Error(),
-			})
+			response.Error(ctx, http.StatusConflict, response.CodeUserExists, "用户名或邮箱已注册")
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "注册失败",
-		})
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "服务器内部错误")
 		return
 	}
-	ctx.JSON(http.StatusCreated, gin.H{
+	response.Success(ctx, gin.H{
 		"id":       u.ID,
 		"username": u.Username,
 		"email":    u.Email,
@@ -61,31 +57,24 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 func (h *UserHandler) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "参数不合法:" + err.Error()})
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "参数错误: ...")
 		return
 	}
 	u, err := h.svc.Login(req.Username, req.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrBadCredential) {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
+			response.Error(ctx, http.StatusBadRequest, response.CodeInvalidCredentials, "用户名或密码错误")
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "登录失败",
-		})
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "服务器错误")
 		return
 	}
 	token, err := h.jwtSvc.GenerateToken(u.ID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "签发 token失败",
-		})
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "token 提取失败")
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
+	response.Success(ctx, gin.H{
 		"message":  "登录成功",
 		"token":    token,
 		"user_id":  u.ID,
@@ -100,11 +89,11 @@ func (h *UserHandler) Me(ctx *gin.Context) {
 
 	u, err := h.svc.GetByID(userID)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"error": "用户不存在",
-		})
+		response.Error(ctx, http.StatusNotFound, response.CodeNotFound, "用户不存在")
+		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
+
+	response.Success(ctx, gin.H{
 		"id":       u.ID,
 		"username": u.Username,
 		"email":    u.Email,

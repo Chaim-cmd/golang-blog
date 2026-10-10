@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 
+	"github.com/Chaim-cmd/golang-blog/internal/logger"
 	"github.com/Chaim-cmd/golang-blog/internal/model"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -58,6 +60,9 @@ func (s *UserService) Login(username, password string) (*model.User, error) {
 		return nil, ErrBadCredential
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
+		logger.Log.Warn("login password incorrect",
+			zap.String("username", u.Username),
+		)
 		return nil, ErrBadCredential
 	}
 

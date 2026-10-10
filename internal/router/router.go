@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chaim-cmd/golang-blog/internal/config"
 	"github.com/Chaim-cmd/golang-blog/internal/handler"
+	"github.com/Chaim-cmd/golang-blog/internal/logger"
 	"github.com/Chaim-cmd/golang-blog/internal/middleware"
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	gin.SetMode(cfg.Server.Mode) //debug 日志详细，release 精简，上线切release
 
 	r := gin.New()
+	r.Use(middleware.RecoveryMiddleware(logger.Log))
 	r.Use(gin.Logger(), gin.Recovery())
 	svc := service.NewUserService(db)
 	jwtSvc := service.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)
