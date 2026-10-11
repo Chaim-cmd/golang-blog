@@ -17,7 +17,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	r := gin.New()
 	r.Use(middleware.RecoveryMiddleware(logger.Log))
-	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(gin.Logger())
 	svc := service.NewUserService(db)
 	jwtSvc := service.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)
 	h := handler.NewUserHandler(svc, jwtSvc)

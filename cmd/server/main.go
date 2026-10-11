@@ -19,11 +19,8 @@ func main() {
 	db, err := database.InitMySQL(cfg.Database)
 	if err != nil {
 		log.Fatalf("数据库初始化失败：%v", err)
+
 	}
-
-	r := router.NewRouter(cfg, db)
-
-	log.Printf("[%s] listening on %s", cfg.App.Name, cfg.Server.Port)
 
 	if err := logger.Init(cfg.Log.Level); err != nil {
 		log.Fatalf("init logger : %v", err)
@@ -33,6 +30,9 @@ func main() {
 	logger.Log.Info("server starting",
 		zap.String("mode", cfg.Server.Mode),
 		zap.String("port", cfg.Server.Port))
+	r := router.NewRouter(cfg, db)
+
+	log.Printf("[%s] listening on %s", cfg.App.Name, cfg.Server.Port)
 
 	if err := r.Run(":" + cfg.Server.Port); err != nil {
 		log.Fatalf("服务退出：%v", err)
