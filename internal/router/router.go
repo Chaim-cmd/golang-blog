@@ -21,6 +21,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	svc := service.NewUserService(db)
 	jwtSvc := service.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)
 	h := handler.NewUserHandler(svc, jwtSvc)
+	h2 := handler.NewArticleHandler((*service.ArticlesService)(svc))
 
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
@@ -32,12 +33,17 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	{
 		api.POST("/register", h.Register)
 		api.POST("/login", h.Login)
+		api.GET("/articles", h2.List)
+		api.GET("/articles/:id", h2.Detail)
 
 	}
-	protected := api.Group("")
+	protected := api.Group("/api/v1")
 	protected.Use(middleware.AuthMiddleware([]byte(cfg.JWT.Secret)))
 	{
 		protected.GET("/me", h.Me)
+		protected.POST("/articles", h2.Create)
+		protected.PUT("/articles/:id", h2.Update)
+		protected.DELETE("/articles/:id", h2.Delete)
 	}
 	return r
 }

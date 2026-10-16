@@ -37,7 +37,7 @@ type JWTConfig struct {
 	ExpireHours int    `mapstructure:"expire_hours"`
 }
 type LogConfig struct {
-	Level string `mapstructureL:"level"`
+	Level string `mapstructure:"level"`
 }
 
 func Load(path string) (*Config, error) {

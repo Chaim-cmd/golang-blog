@@ -15,6 +15,7 @@ const (
 	CodeNotFound           = 1003 //资源不存在
 	CodeInvalidCredentials = 1004 // 用户或密码错误
 	CodeUnauthorized       = 2001 //未登录 / token 无效或过期
+	CodeForbidden          = 2002 // 已登录，但无权操作资源（403）
 	CodeServerError        = 5000 //服务端内部错误
 )
 

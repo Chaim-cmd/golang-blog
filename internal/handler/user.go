@@ -35,7 +35,7 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 	var req RegisterRequest
 	//ShouldBindJSON 解析请求体 JSON 并执行binding 校验
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "参数错误: ...")
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
 		return
 	}
 	u, err := h.svc.Register(req.Username, req.Email, req.Password)
@@ -57,7 +57,7 @@ func (h *UserHandler) Register(ctx *gin.Context) {
 func (h *UserHandler) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "参数错误: ...")
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
 		return
 	}
 	u, err := h.svc.Login(req.Username, req.Password)
