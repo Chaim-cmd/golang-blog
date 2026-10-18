@@ -8,10 +8,12 @@ import (
 	"github.com/Chaim-cmd/golang-blog/internal/response"
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type ArticleHandler struct {
-	svc *service.ArticlesService
+	svc        *service.Articles
+	commentSvc *service.Comments
 }
 
 var Req struct {
@@ -19,9 +21,10 @@ var Req struct {
 	Content string `json:"content" binding:"required"`
 }
 
-func NewArticleHandler(svc *service.ArticlesService) *ArticleHandler {
+func NewArticleHandler(svc *service.Articles, commentSvc *service.Comments) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
+		svc:        svc,
+		commentSvc: commentSvc,
 	}
 }
 
@@ -97,7 +100,117 @@ func (h *ArticleHandler) Delete(ctx *gin.Context) {
 }
 
 func (h *ArticleHandler) List(ctx *gin.Context) {
+	pageStr := ctx.Query("page")
+	pageSizeStr := ctx.Query("page_size")
+	page, err := strconv.Atoi(pageStr)
+
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, http.StatusBadRequest, err.Error())
+		return
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, http.StatusBadRequest, err.Error())
+		return
+	}
+	articles, total, err := h.svc.List(page, pageSize)
+	if err != nil {
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "获取文章失败")
+		return
+	}
+	if page < 1 || pageSize < 1 {
+		pageSize = 10
+		page = 1
+	}
+	if pageSize > 50 {
+		pageSize = 50
+	}
+	response.Success(ctx, gin.H{
+		"data":  articles,
+		"total": total,
+	})
 
 }
 
-func (h *ArticleHandler) Detail(ctx *gin.Context) {}
+func (h *ArticleHandler) Detail(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+	}
+
+	article, err := h.svc.GetByID(uint(id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Error(ctx, http.StatusNotFound, response.CodeNotFound, "文章不存在")
+			return
+		}
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "查询文章失败")
+		return
+	}
+
+	response.Success(ctx, article)
+}
+
+func (h *ArticleHandler) CreateComments(ctx *gin.Context) {
+	artIDStr := ctx.Param("id")
+	artID, err := strconv.ParseUint(artIDStr, 10, 64)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+	}
+	userID, ok := ctx.Get("user_id")
+	if !ok {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+	}
+	UID := userID.(uint)
+	var Req struct {
+		Content string `json:"content" gorm:"binding"`
+	}
+	if err := ctx.ShouldBindJSON(&Req); err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+
+	}
+	comment, err := h.commentSvc.Create(uint(artID), UID, Req.Content)
+	if err != nil {
+		response.Error(ctx, http.StatusNotFound, response.CodeNotFound, "文章不存在")
+	}
+	response.Success(ctx, gin.H{
+		"data": comment,
+	})
+
+}
+
+func (h *ArticleHandler) ListByArticle(ctx *gin.Context) {
+	pageStr := ctx.Query("page")
+	pageSizeStr := ctx.Query("pageSize")
+	var title int64
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+	}
+	Comment, title, err := h.commentSvc.ListByArticle(page, pageSize)
+	if err != nil {
+		response.Error(ctx, http.StatusNotFound, response.CodeNotFound, "获取评论失败")
+		return
+	}
+	if page < 1 || pageSize < 1 {
+		pageSize = 10
+		page = 1
+	}
+	if pageSize > 50 {
+		pageSize = 50
+	}
+	response.Success(ctx, gin.H{
+		"data":  Comment,
+		"title": title,
+	})
+
+}

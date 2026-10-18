@@ -12,16 +12,16 @@ var (
 	ErrArticleNoPerm   = errors.New("no permission for this article")
 )
 
-type ArticlesService struct {
+type Articles struct {
 	db *gorm.DB
 }
 
-func NewArticleService(db *gorm.DB) *ArticlesService {
-	return &ArticlesService{db: db}
+func NewArticleService(db *gorm.DB) *Articles {
+	return &Articles{db: db}
 }
 
-func (s *ArticlesService) Create(userID uint, title, content string) (*model.ArticlesService, error) {
-	art := &model.ArticlesService{
+func (s *Articles) Create(userID uint, title, content string) (*model.Article, error) {
+	art := &model.Article{
 		UserID:  userID,
 		Title:   title,
 		Context: content,
@@ -32,18 +32,21 @@ func (s *ArticlesService) Create(userID uint, title, content string) (*model.Art
 	return art, nil
 }
 
-func (s *ArticlesService) GetByID(id uint) (*model.ArticlesService, error) {
-	var art model.ArticlesService
+func (s *Articles) GetByID(id uint) (*model.Article, error) {
+	var art model.Article
 	if err := s.db.First(&art, id).Error; err != nil {
+		return nil, err
+	}
+	if err := s.db.Preload("Comments").First(&art, id).Error; err != nil {
 		return nil, err
 	}
 	return &art, nil
 }
 
-func (s *ArticlesService) List(page, pageSize int) ([]model.ArticlesService, int64, error) {
+func (s *Articles) List(page, pageSize int) ([]model.Article, int64, error) {
 	var count int64
-	var list []model.ArticlesService
-	query := s.db.Model(&model.ArticlesService{})
+	var list []model.Article
+	query := s.db.Model(&model.Article{})
 	if err := query.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
@@ -53,7 +56,7 @@ func (s *ArticlesService) List(page, pageSize int) ([]model.ArticlesService, int
 	return list, count, nil
 }
 
-func (s *ArticlesService) Update(id, userID uint, title, content string) error {
+func (s *Articles) Update(id, userID uint, title, content string) error {
 	result := s.db.Where("id = ? AND user_id = ?", id, userID).Updates(map[string]any{
 		"title":   title,
 		"content": content,
@@ -64,8 +67,8 @@ func (s *ArticlesService) Update(id, userID uint, title, content string) error {
 	}
 	if rows == 0 {
 		var cnt int64
-		s.db.Model(&model.ArticlesService{}).Where("id = ?", id).Count(&cnt)
-		if cnt == 0 {
+		s.db.Model(&model.Article{}).Where("id = ?", id).Count(&cnt)
+		if cnt > 0 {
 			return ErrArticleNoPerm
 		}
 		return ErrArticleNotFound
@@ -73,20 +76,20 @@ func (s *ArticlesService) Update(id, userID uint, title, content string) error {
 	return nil
 }
 
-func (s *ArticlesService) Delete(id, userID uint) error {
-	result := s.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.ArticlesService{})
+func (s *Articles) Delete(id, userID uint) error {
+	result := s.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Article{})
 	rows := result.RowsAffected
-	if result.Error != nil {
-		return result.Error
-	}
-	if rows == 0 {
-		var cnt int64
-		s.db.Model(&model.ArticlesService{}).Where("id = ?", id).Count(&cnt)
-		if cnt == 0 {
-			return ErrArticleNoPerm
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ? AND user_id = ?", id, userID).Error; err != nil {
+			if result.Error != nil {
+				return result.Error
+			}
+			if rows == 0 {
+				return ErrArticleNotFound
+			}
+			return tx.Where("article_id = ?", id).Delete(&model.Comment{}).Error
 		}
-		return ErrArticleNotFound
-	}
-	return nil
+		return nil
+	})
 
 }

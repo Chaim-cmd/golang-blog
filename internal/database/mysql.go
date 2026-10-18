@@ -40,8 +40,11 @@ func InitMySQL(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&model.User{}); err != nil {
 		return nil, fmt.Errorf("迁移 users 表失败：%w", err)
 	}
-	if err := db.AutoMigrate(&model.ArticlesService{}); err != nil {
-		return nil, fmt.Errorf("迁移 ArticlesService 表失败： %w", err)
+	if err := db.AutoMigrate(&model.Article{}); err != nil {
+		return nil, fmt.Errorf("迁移 Article 表失败： %w", err)
+	}
+	if err := db.AutoMigrate(&model.Comment{}); err != nil {
+		return nil, fmt.Errorf("迁移 Comment 表失败： %w ", err)
 	}
 
 	return db, nil

@@ -19,9 +19,11 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r.Use(middleware.RecoveryMiddleware(logger.Log))
 	r.Use(gin.Logger())
 	svc := service.NewUserService(db)
+	artSvc := service.NewArticleService(db)
 	jwtSvc := service.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)
 	h := handler.NewUserHandler(svc, jwtSvc)
-	h2 := handler.NewArticleHandler((*service.ArticlesService)(svc))
+	commentSvc := service.NewComments(db)
+	h2 := handler.NewArticleHandler(artSvc, commentSvc)
 
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
@@ -29,12 +31,13 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		})
 	})
 
-	api := r.Group("/api/v1")
+	api := r.Group("")
 	{
 		api.POST("/register", h.Register)
 		api.POST("/login", h.Login)
 		api.GET("/articles", h2.List)
 		api.GET("/articles/:id", h2.Detail)
+		api.GET("/articles/:id/comments", h2.ListByArticle)
 
 	}
 	protected := api.Group("/api/v1")
@@ -44,6 +47,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		protected.POST("/articles", h2.Create)
 		protected.PUT("/articles/:id", h2.Update)
 		protected.DELETE("/articles/:id", h2.Delete)
+		protected.POST("/articles/:id/comments", h2.CreateComments)
 	}
 	return r
 }
