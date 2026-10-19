@@ -18,12 +18,15 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.RecoveryMiddleware(logger.Log))
 	r.Use(gin.Logger())
+
 	svc := service.NewUserService(db)
 	artSvc := service.NewArticleService(db)
+	LikeSvc := service.NewLike(db)
+	commentSvc := service.NewComments(db)
+
 	jwtSvc := service.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)
 	h := handler.NewUserHandler(svc, jwtSvc)
-	commentSvc := service.NewComments(db)
-	h2 := handler.NewArticleHandler(artSvc, commentSvc)
+	h2 := handler.NewArticleHandler(artSvc, commentSvc, LikeSvc)
 
 	r.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
@@ -48,6 +51,8 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		protected.PUT("/articles/:id", h2.Update)
 		protected.DELETE("/articles/:id", h2.Delete)
 		protected.POST("/articles/:id/comments", h2.CreateComments)
+		protected.POST("/articles/:id/like", h2.CreateLike)
+		protected.DELETE("/articles/:id/like", h2.DeleteLike)
 	}
 	return r
 }

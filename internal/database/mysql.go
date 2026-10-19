@@ -46,6 +46,9 @@ func InitMySQL(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&model.Comment{}); err != nil {
 		return nil, fmt.Errorf("迁移 Comment 表失败： %w ", err)
 	}
+	if err := db.AutoMigrate(&model.Like{}); err != nil {
+		return nil, fmt.Errorf("迁移 Like 表失败： %w ", err)
+	}
 
 	return db, nil
 }

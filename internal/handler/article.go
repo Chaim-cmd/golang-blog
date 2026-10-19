@@ -14,12 +14,14 @@ import (
 type ArticleHandler struct {
 	svc        *service.Articles
 	commentSvc *service.Comments
+	LikeSvc    *service.Like
 }
 
-func NewArticleHandler(svc *service.Articles, commentSvc *service.Comments) *ArticleHandler {
+func NewArticleHandler(svc *service.Articles, commentSvc *service.Comments, LikeSvc *service.Like) *ArticleHandler {
 	return &ArticleHandler{
 		svc:        svc,
 		commentSvc: commentSvc,
+		LikeSvc:    LikeSvc,
 	}
 }
 
@@ -210,4 +212,51 @@ func (h *ArticleHandler) ListByArticle(ctx *gin.Context) {
 		"title": title,
 	})
 
+}
+
+func (h *ArticleHandler) CreateLike(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	artID, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+	}
+	userID, ok := ctx.Get("user_id")
+	UID := userID.(uint)
+	if !ok {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+	}
+	if err := h.LikeSvc.Create(UID, uint(artID)); err != nil {
+		if errors.Is(err, service.ErrAlreadyLiked) {
+			response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "已经点赞了")
+			return
+		}
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "点赞失败")
+		return
+	}
+
+}
+
+func (h *ArticleHandler) DeleteLike(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	artID, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+	}
+	userID, ok := ctx.Get("user_id")
+	UID := userID.(uint)
+	if !ok {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		return
+	}
+	if err := h.LikeSvc.Delete(UID, uint(artID)); err != nil {
+		if errors.Is(err, service.ErrNotLiked) {
+			response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "尚未点赞")
+			return
+		}
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "取消点赞失败")
+		return
+	}
 }
