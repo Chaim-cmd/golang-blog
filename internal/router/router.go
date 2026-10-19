@@ -31,7 +31,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		})
 	})
 
-	api := r.Group("")
+	api := r.Group("/api/v1")
 	{
 		api.POST("/register", h.Register)
 		api.POST("/login", h.Login)
@@ -40,7 +40,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 		api.GET("/articles/:id/comments", h2.ListByArticle)
 
 	}
-	protected := api.Group("/api/v1")
+	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware([]byte(cfg.JWT.Secret)))
 	{
 		protected.GET("/me", h.Me)

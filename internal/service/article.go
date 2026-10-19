@@ -24,7 +24,7 @@ func (s *Articles) Create(userID uint, title, content string) (*model.Article, e
 	art := &model.Article{
 		UserID:  userID,
 		Title:   title,
-		Context: content,
+		Content: content,
 	}
 	if err := s.db.Create(art).Error; err != nil {
 		return nil, err
@@ -34,9 +34,6 @@ func (s *Articles) Create(userID uint, title, content string) (*model.Article, e
 
 func (s *Articles) GetByID(id uint) (*model.Article, error) {
 	var art model.Article
-	if err := s.db.First(&art, id).Error; err != nil {
-		return nil, err
-	}
 	if err := s.db.Preload("Comments").First(&art, id).Error; err != nil {
 		return nil, err
 	}
@@ -46,6 +43,13 @@ func (s *Articles) GetByID(id uint) (*model.Article, error) {
 func (s *Articles) List(page, pageSize int) ([]model.Article, int64, error) {
 	var count int64
 	var list []model.Article
+	if page < 1 || pageSize < 1 {
+		pageSize = 10
+		page = 1
+	}
+	if pageSize > 50 {
+		pageSize = 50
+	}
 	query := s.db.Model(&model.Article{})
 	if err := query.Count(&count).Error; err != nil {
 		return nil, 0, err
@@ -77,9 +81,9 @@ func (s *Articles) Update(id, userID uint, title, content string) error {
 }
 
 func (s *Articles) Delete(id, userID uint) error {
-	result := s.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Article{})
-	rows := result.RowsAffected
 	return s.db.Transaction(func(tx *gorm.DB) error {
+		result := s.db.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Article{})
+		rows := result.RowsAffected
 		if err := tx.Where("id = ? AND user_id = ?", id, userID).Error; err != nil {
 			if result.Error != nil {
 				return result.Error

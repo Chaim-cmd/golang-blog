@@ -16,11 +16,6 @@ type ArticleHandler struct {
 	commentSvc *service.Comments
 }
 
-var Req struct {
-	Title   string `json:"title" binding:"required"`
-	Content string `json:"content" binding:"required"`
-}
-
 func NewArticleHandler(svc *service.Articles, commentSvc *service.Comments) *ArticleHandler {
 	return &ArticleHandler{
 		svc:        svc,
@@ -29,6 +24,10 @@ func NewArticleHandler(svc *service.Articles, commentSvc *service.Comments) *Art
 }
 
 func (h *ArticleHandler) Create(ctx *gin.Context) {
+	var Req struct {
+		Title   string `json:"title" binding:"required"`
+		Content string `json:"content" binding:"required"`
+	}
 
 	if err := ctx.ShouldBindJSON(&Req); err != nil {
 		response.Error(ctx, http.StatusBadRequest, http.StatusBadRequest, err.Error())
@@ -49,6 +48,11 @@ func (h *ArticleHandler) Create(ctx *gin.Context) {
 }
 
 func (h *ArticleHandler) Update(ctx *gin.Context) {
+
+	var Req struct {
+		Title   string `json:"title" binding:"required"`
+		Content string `json:"content" binding:"required"`
+	}
 	idStr := ctx.Param("id")
 	//转成uint
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -88,7 +92,7 @@ func (h *ArticleHandler) Delete(ctx *gin.Context) {
 			response.Error(ctx, http.StatusNotFound, response.CodeNotFound, "文章不存在")
 			return
 		} else if errors.Is(err, service.ErrArticleNoPerm) {
-			response.Error(ctx, http.StatusForbidden, response.CodeInvalidParams, "无权删除文章")
+			response.Error(ctx, http.StatusForbidden, response.CodeForbidden, "无权删除文章")
 			return
 		} else {
 			response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, err.Error())
@@ -117,13 +121,6 @@ func (h *ArticleHandler) List(ctx *gin.Context) {
 	if err != nil {
 		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "获取文章失败")
 		return
-	}
-	if page < 1 || pageSize < 1 {
-		pageSize = 10
-		page = 1
-	}
-	if pageSize > 50 {
-		pageSize = 50
 	}
 	response.Success(ctx, gin.H{
 		"data":  articles,
