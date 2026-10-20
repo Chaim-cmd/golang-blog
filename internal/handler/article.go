@@ -222,11 +222,11 @@ func (h *ArticleHandler) CreateLike(ctx *gin.Context) {
 		return
 	}
 	userID, ok := ctx.Get("user_id")
-	UID := userID.(uint)
 	if !ok {
 		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
 		return
 	}
+	UID := userID.(uint)
 	if err := h.LikeSvc.Create(UID, uint(artID)); err != nil {
 		if errors.Is(err, service.ErrAlreadyLiked) {
 			response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "已经点赞了")
@@ -235,6 +235,9 @@ func (h *ArticleHandler) CreateLike(ctx *gin.Context) {
 		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "点赞失败")
 		return
 	}
+	response.Success(ctx, gin.H{
+		"message": "点赞成功",
+	})
 
 }
 
@@ -259,4 +262,8 @@ func (h *ArticleHandler) DeleteLike(ctx *gin.Context) {
 		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "取消点赞失败")
 		return
 	}
+
+	response.Success(ctx, gin.H{
+		"message": "已取消",
+	})
 }
