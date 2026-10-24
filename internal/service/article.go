@@ -82,7 +82,7 @@ func (s *Articles) Update(id, userID uint, title, content string) error {
 
 func (s *Articles) Delete(id, userID uint) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		result := tx.Where("article_id = ? AND user_id = ?", id, userID).Delete(&model.Article{})
+		result := tx.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Article{})
 		if result.Error != nil {
 			return result.Error
 		}
@@ -97,7 +97,7 @@ func (s *Articles) Delete(id, userID uint) error {
 				return ErrArticleNotFound
 			}
 		}
-		if err := tx.Where("article_id = ?", id).Delete(&model.Comment{}).Error; err != nil {
+		if err := tx.Where("id = ?", id).Delete(&model.Comment{}).Error; err != nil {
 			return err
 		}
 		return nil
