@@ -97,7 +97,7 @@ func (s *Articles) Delete(id, userID uint) error {
 				return ErrArticleNotFound
 			}
 		}
-		if err := tx.Where("id = ?", id).Delete(&model.Comment{}).Error; err != nil {
+		if err := tx.Where("article_id = ?", id).Delete(&model.Comment{}).Error; err != nil {
 			return err
 		}
 		return nil

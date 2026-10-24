@@ -21,14 +21,13 @@ type Like struct {
 func NewLike(db *gorm.DB) *Like {
 	return &Like{
 		db:      db,
-		notices: &NoticeService{db: db},
+		notices: NewNotices(db),
 	}
 }
 
 func (n *Like) Create(userID, ArticleID uint) error {
 	n.notices.Enqueue(NoticeTask{
 		LikerID:   userID,
-		AuthorID:  ArticleID,
 		ArticleID: ArticleID,
 	})
 	return n.db.Transaction(func(tx *gorm.DB) error {
@@ -72,7 +71,7 @@ func (n *Like) Delete(userID, ArticleID uint) error {
 		if result.RowsAffected == 0 {
 			return ErrNotLiked
 		}
-		if err := tx.Model(&model.Article{}).Where("article_id = ? ", ArticleID).UpdateColumn("like_count", gorm.Expr("GREATEST(like_count - 1,0)")).Error; err != nil {
+		if err := tx.Model(&model.Article{}).Where("id = ? ", ArticleID).UpdateColumn("like_count", gorm.Expr("GREATEST(like_count - 1,0)")).Error; err != nil {
 			return err
 		}
 		return nil
