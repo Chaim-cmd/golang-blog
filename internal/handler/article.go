@@ -102,6 +102,10 @@ func (h *ArticleHandler) Delete(ctx *gin.Context) {
 		}
 
 	}
+	response.Success(ctx, gin.H{
+		"user_id": userID,
+		"message": "删除成功",
+	})
 
 }
 

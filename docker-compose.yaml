@@ -1,0 +1,25 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_DATABASE: golang_blog          # 和 config.yaml 的库名对上
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 3s
+      retries: 10
+
+  app:
+    build: .                               # 上下文 = 仓库根
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:                              
+      - ./internal/config/config.yaml:/app/internal/config/config.yaml
+
+volumes:                                 
+  mysql_data:
