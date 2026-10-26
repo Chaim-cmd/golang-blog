@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
+func NewRouter(cfg *config.Config, db *gorm.DB, noticeSvc *service.NoticeService) *gin.Engine {
 	gin.SetMode(cfg.Server.Mode) //debug 日志详细，release 精简，上线切release
 
 	r := gin.New()
@@ -21,7 +21,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 
 	svc := service.NewUserService(db)
 	artSvc := service.NewArticleService(db)
-	LikeSvc := service.NewLike(db)
+	LikeSvc := service.NewLike(db, noticeSvc)
 	commentSvc := service.NewComments(db)
 
 	jwtSvc := service.NewJWTService(cfg.JWT.Secret, cfg.JWT.ExpireHours)

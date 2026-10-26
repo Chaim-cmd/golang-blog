@@ -53,8 +53,8 @@ func (s *NoticeService) worker() {
 // process 单条处理,失败只记日志
 func (s *NoticeService) process(t NoticeTask) {
 	if err := s.Save(t); err != nil {
-		log.Printf("[notice] save failed liker=%d author=%d article=%d",
-			t.LikerID, t.AuthorID, t.ArticleID,
+		log.Printf("[notice] save failed liker=%d author=%d article=%d err=%v",
+			t.LikerID, t.AuthorID, t.ArticleID, err,
 		)
 
 	}
@@ -69,7 +69,7 @@ func (s *NoticeService) Save(t NoticeTask) error {
 	if err != nil {
 		return err
 	}
-	content := fmt.Sprintf("%s 赞了你得文章", user.Username)
+	content := fmt.Sprintf("%s 赞了你的文章", user.Username)
 	notice := &model.Notice{
 		UserID:    t.AuthorID,
 		ArticleID: t.ArticleID,

@@ -18,19 +18,24 @@ type Like struct {
 	notices *NoticeService
 }
 
-func NewLike(db *gorm.DB) *Like {
+func NewLike(db *gorm.DB, notices *NoticeService) *Like {
 	return &Like{
 		db:      db,
-		notices: NewNotices(db),
+		notices: notices,
 	}
 }
 
 func (n *Like) Create(userID, ArticleID uint) error {
-	n.notices.Enqueue(NoticeTask{
-		LikerID:   userID,
-		ArticleID: ArticleID,
-	})
+	var authorID uint
 	return n.db.Transaction(func(tx *gorm.DB) error {
+
+		//确认文章在不在
+		var article model.Article
+		if err := tx.Select("id", "user_id").First(&article, ArticleID).Error; err != nil {
+			return err
+		}
+		authorID = article.UserID
+
 		like := model.Like{
 			UserID:    userID,
 			ArticleID: ArticleID,
@@ -52,6 +57,12 @@ func (n *Like) Create(userID, ArticleID uint) error {
 		if err != nil {
 			return err
 		}
+		n.notices.Enqueue(NoticeTask{
+			LikerID:   userID,
+			AuthorID:  authorID,
+			ArticleID: ArticleID,
+		})
+
 		return nil
 
 	})
