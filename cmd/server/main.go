@@ -53,7 +53,7 @@ func main() {
 	}
 
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("服务退出：%v", err)
 		}
 	}()

@@ -27,12 +27,11 @@ func NewLike(db *gorm.DB, notices *NoticeService) *Like {
 
 func (n *Like) Create(userID, ArticleID uint) error {
 	var authorID uint
-	return n.db.Transaction(func(tx *gorm.DB) error {
 
-		//确认文章在不在
+	err := n.db.Transaction(func(tx *gorm.DB) error {
 		var article model.Article
 		if err := tx.Select("id", "user_id").First(&article, ArticleID).Error; err != nil {
-			return err
+			return err // 文章不存在：ErrRecordNotFound，事务回滚，什么都不会发生
 		}
 		authorID = article.UserID
 
@@ -41,34 +40,34 @@ func (n *Like) Create(userID, ArticleID uint) error {
 			ArticleID: ArticleID,
 		}
 		if err := tx.Create(&like).Error; err != nil {
-			// GORM v2 duplicate-key error.
+			// GORM 翻译层把 1062 翻成 ErrDuplicatedKey（前提见下方"整合提示②"）
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
 				return ErrAlreadyLiked
 			}
-
-			//兜底
+			// 兜底：驱动层直接匹配 1062
 			var mysqlErr *mysql.MySQLError
 			if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
 				return ErrAlreadyLiked
 			}
 			return err
 		}
-		err := tx.Model(&model.Article{}).Where("id = ?", ArticleID).UpdateColumn("like_count", gorm.Expr("like_count + 1")).Error
-		if err != nil {
+
+		if err := tx.Model(&model.Article{}).Where("id = ?", ArticleID).UpdateColumn("like_count", gorm.Expr("like_count + 1")).Error; err != nil {
 			return err
 		}
-		n.notices.Enqueue(NoticeTask{
-			LikerID:   userID,
-			AuthorID:  authorID,
-			ArticleID: ArticleID,
-		})
-
 		return nil
-
 	})
+	if err != nil {
+		return err // 事务失败（含重复点赞）：一个通知都不发
+	}
 
+	n.notices.Enqueue(NoticeTask{
+		LikerID:   userID,
+		AuthorID:  authorID,
+		ArticleID: ArticleID,
+	})
+	return nil
 }
-
 func (n *Like) Delete(userID, ArticleID uint) error {
 	return n.db.Transaction(func(tx *gorm.DB) error {
 		like := model.Like{

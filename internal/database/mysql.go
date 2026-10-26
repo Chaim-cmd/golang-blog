@@ -16,7 +16,7 @@ func InitMySQL(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName,
 	)
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{TranslateError: true})
 	if err != nil {
 		return nil, fmt.Errorf("连接 Mysql 失败:%w", err)
 	}
