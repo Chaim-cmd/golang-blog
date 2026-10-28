@@ -10,6 +10,7 @@ import (
 
 	"os/signal"
 
+	"github.com/Chaim-cmd/golang-blog/internal/cache"
 	"github.com/Chaim-cmd/golang-blog/internal/config"
 	"github.com/Chaim-cmd/golang-blog/internal/database"
 	"github.com/Chaim-cmd/golang-blog/internal/logger"
@@ -36,11 +37,14 @@ func main() {
 	defer logger.Log.Sync() // 退出前把缓冲刷盘
 
 	noticeSvc := service.NewNotices(db)
-
+	rdb, err := cache.NewRedisClient(cfg)
+	if err != nil {
+		logger.Log.Fatal("redis初始化失败", zap.Error(err))
+	}
 	logger.Log.Info("server starting",
 		zap.String("mode", cfg.Server.Mode),
 		zap.String("port", cfg.Server.Port))
-	r := router.NewRouter(cfg, db, noticeSvc)
+	r := router.NewRouter(cfg, db, noticeSvc, rdb)
 
 	log.Printf("[%s] listening on %s", cfg.App.Name, cfg.Server.Port)
 

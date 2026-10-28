@@ -9,10 +9,11 @@ import (
 	"github.com/Chaim-cmd/golang-blog/internal/middleware"
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-func NewRouter(cfg *config.Config, db *gorm.DB, noticeSvc *service.NoticeService) *gin.Engine {
+func NewRouter(cfg *config.Config, db *gorm.DB, noticeSvc *service.NoticeService, cache *redis.Client) *gin.Engine {
 	gin.SetMode(cfg.Server.Mode) //debug 日志详细，release 精简，上线切release
 
 	r := gin.New()
@@ -20,7 +21,8 @@ func NewRouter(cfg *config.Config, db *gorm.DB, noticeSvc *service.NoticeService
 	r.Use(gin.Logger())
 
 	svc := service.NewUserService(db)
-	artSvc := service.NewArticleService(db)
+
+	artSvc := service.NewArticleService(db, cache)
 	LikeSvc := service.NewLike(db, noticeSvc)
 	commentSvc := service.NewComments(db)
 
