@@ -49,7 +49,6 @@ func (h *ArticleHandler) Create(ctx *gin.Context) {
 }
 
 func (h *ArticleHandler) Update(ctx *gin.Context) {
-
 	var Req struct {
 		Title   string `json:"title" binding:"required"`
 		Content string `json:"content" binding:"required"`
@@ -71,7 +70,12 @@ func (h *ArticleHandler) Update(ctx *gin.Context) {
 			response.Error(ctx, http.StatusForbidden, response.CodeForbidden, "没有权限修改文章")
 			return
 		}
-		response.Error(ctx, http.StatusNotFound, response.CodeNotFound, "更新失败")
+		if errors.Is(err, service.ErrArticleNotFound) {
+			response.Error(ctx, http.StatusNotFound, response.CodeNotFound, "文章不存在")
+			return
+		}
+		// 剩下的是DB异常等
+		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "更新失败")
 		return
 	}
 	response.Success(ctx, gin.H{

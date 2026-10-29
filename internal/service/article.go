@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/Chaim-cmd/golang-blog/internal/model"
@@ -107,10 +106,11 @@ func (s *Articles) List(page, pageSize int) ([]model.Article, int64, error) {
 }
 
 func (s *Articles) Update(id, userID uint, title, content string) error {
-	result := s.db.Where("id = ? AND user_id = ?", id, userID).Updates(map[string]any{
+	result := s.db.Model(&model.Article{}).Where("id = ? AND user_id = ?", id, userID).Updates(map[string]any{
 		"title":   title,
 		"content": content,
 	})
+
 	rows := result.RowsAffected
 	if result.Error != nil {
 		return result.Error
@@ -125,7 +125,7 @@ func (s *Articles) Update(id, userID uint, title, content string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	s.cache.Del(ctx, "article:"+strconv.FormatUint(uint64(id), 10))
+	s.cache.Del(ctx, articleCacheKey(id))
 	return nil
 }
 
@@ -155,7 +155,7 @@ func (s *Articles) Delete(id, userID uint) error {
 	if err == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		s.cache.Del(ctx, "article:"+strconv.FormatUint(uint64(id), 10))
+		s.cache.Del(ctx, articleCacheKey(id))
 	}
 	return err
 
