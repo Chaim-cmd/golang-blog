@@ -41,6 +41,7 @@ func main() {
 	if err != nil {
 		logger.Log.Fatal("redis初始化失败", zap.Error(err))
 	}
+	defer rdb.Close()
 	logger.Log.Info("server starting",
 		zap.String("mode", cfg.Server.Mode),
 		zap.String("port", cfg.Server.Port))

@@ -30,6 +30,10 @@ func NewArticleService(db *gorm.DB, cache *redis.Client) *Articles {
 	}
 }
 
+func articleCacheKey(id uint) string {
+	return fmt.Sprintf("article:detail:%d", id)
+}
+
 func (s *Articles) Create(userID uint, title, content string) (*model.Article, error) {
 	art := &model.Article{
 		UserID:  userID,
@@ -43,37 +47,43 @@ func (s *Articles) Create(userID uint, title, content string) (*model.Article, e
 }
 
 func (s *Articles) GetByID(id uint) (*model.Article, error) {
-	key := fmt.Sprintf("article:detail:%d", id)
-	var art model.Article
+	key := articleCacheKey(id)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	val, err := s.cache.Get(ctx, key).Result()
-	if err == nil {
-		//缓存空值
-		if val == "" {
-			return nil, ErrArticleNotFound
 
-		}
-	}
-	if errors.Is(err, redis.Nil) {
-		if err := s.db.Preload("Comments").First(&art, id).Error; err != nil {
+	val, err := s.cache.Get(ctx, key).Result()
+	switch {
+	case err == nil && val == "": // 空标记命中（防穿透生效中）
+		return nil, ErrArticleNotFound
+	case err == nil: // ★ 正常命中：就地反序列化、就地返回
+		var art model.Article
+		if err := json.Unmarshal([]byte(val), &art); err != nil {
 			return nil, err
 		}
-		b, _ := json.Marshal(art)
-		s.cache.Set(ctx, key, string(b), 10*time.Second)
-
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		//db 查不到：写入空标记
-		_ = s.cache.Set(ctx, key, "", 1*time.Second).Err()
-		return nil, ErrArticleNotFound
-
-	} else if err != nil {
-		return nil, err
+		return &art, nil
+	case errors.Is(err, redis.Nil): // key 不存在：回源
+		var art model.Article
+		if err := s.db.Preload("Comments").First(&art, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				_ = s.cache.Set(ctx, key, "", 1*time.Minute).Err() // ★ 空标记写在这里
+				return nil, ErrArticleNotFound                     // ★ 统一错误，404 才能对
+			}
+			return nil, err
+		}
+		if b, err := json.Marshal(art); err == nil { // Marshal 失败就别 Set
+			_ = s.cache.Set(ctx, key, string(b), 10*time.Minute).Err()
+		}
+		return &art, nil // ★ 回源成功直接返回，别再掉进缓存分支
+	default: // redis 挂了等其他错——降级直查 DB
+		var art model.Article
+		if err := s.db.Preload("Comments").First(&art, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, ErrArticleNotFound
+			}
+			return nil, err
+		}
+		return &art, nil
 	}
-	if err := json.Unmarshal([]byte(val), &model.Article{}); err != nil {
-		return nil, err
-	}
-	return &art, nil
 }
 
 func (s *Articles) List(page, pageSize int) ([]model.Article, int64, error) {
@@ -120,7 +130,7 @@ func (s *Articles) Update(id, userID uint, title, content string) error {
 }
 
 func (s *Articles) Delete(id, userID uint) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
 		result := tx.Where("id = ? AND user_id = ?", id, userID).Delete(&model.Article{})
 		if result.Error != nil {
 			return result.Error
@@ -136,14 +146,17 @@ func (s *Articles) Delete(id, userID uint) error {
 				return ErrArticleNotFound
 			}
 		}
+
 		if err := tx.Where("article_id = ?", id).Delete(&model.Comment{}).Error; err != nil {
 			return err
 		}
+		return nil
+	})
+	if err == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		s.cache.Del(ctx, "article:"+strconv.FormatUint(uint64(id), 10))
-		return nil
-
-	})
+	}
+	return err
 
 }

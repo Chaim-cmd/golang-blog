@@ -165,7 +165,7 @@ func (h *ArticleHandler) CreateComments(ctx *gin.Context) {
 	}
 	userID, ok := ctx.Get("user_id")
 	if !ok {
-		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "user_id not found")
 		return
 	}
 	UID := userID.(uint)
@@ -238,7 +238,7 @@ func (h *ArticleHandler) CreateLike(ctx *gin.Context) {
 	}
 	userID, ok := ctx.Get("user_id")
 	if !ok {
-		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "user_id not found")
 		return
 	}
 	UID := userID.(uint)
@@ -265,7 +265,7 @@ func (h *ArticleHandler) DeleteLike(ctx *gin.Context) {
 	}
 	userID, ok := ctx.Get("user_id")
 	if !ok {
-		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, err.Error())
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "user_id not found")
 		return
 	}
 	UID := userID.(uint)
