@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Chaim-cmd/golang-blog/internal/logger"
 	"github.com/Chaim-cmd/golang-blog/internal/response"
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type ArticleHandler struct {
@@ -75,6 +77,7 @@ func (h *ArticleHandler) Update(ctx *gin.Context) {
 			return
 		}
 		// 剩下的是DB异常等
+		logger.Log.Error("update article failed", zap.Error(err))
 		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "更新失败")
 		return
 	}
@@ -215,8 +218,15 @@ func (h *ArticleHandler) ListByArticle(ctx *gin.Context) {
 	if pageSize > 50 {
 		pageSize = 50
 	}
+	idStr := ctx.Param("id")
+	id64, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.Error(ctx, http.StatusBadRequest, response.CodeInvalidParams, "文章id 不合法 请传入数字")
+		return
+	}
 
-	comments, total, err := h.commentSvc.ListByArticle(page, pageSize)
+	articleID := uint(id64)
+	comments, total, err := h.commentSvc.ListByArticle(articleID, page, pageSize)
 	if err != nil {
 
 		if errors.Is(err, service.ErrArticleNotFound) {

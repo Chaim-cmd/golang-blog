@@ -28,10 +28,10 @@ func (c *Comments) Create(ArticleID, userID uint, content string) (*model.Commen
 	}
 	return comment, nil
 }
-func (c *Comments) ListByArticle(page, pageSize int) ([]model.Comment, int64, error) {
+func (c *Comments) ListByArticle(articleID uint, page, pageSize int) ([]model.Comment, int64, error) {
 	var count int64
 	var comment []model.Comment
-	query := c.db.Model(&model.Comment{})
+	query := c.db.Model(&model.Comment{}).Where("article_id = ?", articleID)
 	if err := query.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
