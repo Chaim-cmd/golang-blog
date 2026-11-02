@@ -37,6 +37,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB, noticeSvc *service.NoticeService
 	})
 
 	api := r.Group("/api/v1")
+	api.Use(middleware.RateLimitersMiddleware())
 	{
 		api.POST("/register", h.Register)
 		api.POST("/login", h.Login)
