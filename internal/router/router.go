@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Chaim-cmd/golang-blog/internal/config"
 	"github.com/Chaim-cmd/golang-blog/internal/handler"
@@ -10,6 +11,7 @@ import (
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/time/rate"
 	"gorm.io/gorm"
 )
 
@@ -37,7 +39,7 @@ func NewRouter(cfg *config.Config, db *gorm.DB, noticeSvc *service.NoticeService
 	})
 
 	api := r.Group("/api/v1")
-	api.Use(middleware.RateLimitersMiddleware())
+	api.Use(middleware.RateLimitersMiddleware(rate.Every(200*time.Millisecond), 5))
 	{
 		api.POST("/register", h.Register)
 		api.POST("/login", h.Login)

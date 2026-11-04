@@ -17,6 +17,7 @@ const (
 	CodeUnauthorized       = 2001 //未登录 / token 无效或过期
 	CodeForbidden          = 2002 // 已登录，但无权操作资源（403）
 	CodeServerError        = 5000 //服务端内部错误
+	CodeTooManyRequest     = 1005 //请求太多
 )
 
 // 全项目统一响应框架

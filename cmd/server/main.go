@@ -14,6 +14,7 @@ import (
 	"github.com/Chaim-cmd/golang-blog/internal/config"
 	"github.com/Chaim-cmd/golang-blog/internal/database"
 	"github.com/Chaim-cmd/golang-blog/internal/logger"
+	"github.com/Chaim-cmd/golang-blog/internal/middleware"
 	"github.com/Chaim-cmd/golang-blog/internal/router"
 	"github.com/Chaim-cmd/golang-blog/internal/service"
 	"go.uber.org/zap"
@@ -66,6 +67,9 @@ func main() {
 	//阻塞
 	<-ctx.Done()
 	logger.Log.Info("shutting down...")
+
+	stopCleanup := middleware.StartCleanup(1*time.Minute, 5*time.Minute)
+	defer stopCleanup()
 
 	//收尾
 	shutDownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

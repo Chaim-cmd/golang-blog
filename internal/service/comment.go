@@ -35,7 +35,7 @@ func (c *Comments) ListByArticle(articleID uint, page, pageSize int) ([]model.Co
 	if err := query.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := c.db.Limit(pageSize).Offset((page - 1) * pageSize).Find(&comment).Error; err != nil {
+	if err := query.Limit(pageSize).Offset((page - 1) * pageSize).Find(&comment).Error; err != nil {
 		return nil, 0, err
 	}
 	return comment, count, nil
