@@ -85,9 +85,10 @@ func (s *Articles) GetByID(id uint) (*model.Article, error) {
 	}
 }
 
-func (s *Articles) List(page, pageSize int) ([]model.Article, int64, error) {
+func (s *Articles) List(page, pageSize int, keyword string) ([]model.Article, int64, error) {
 	var count int64
 	var list []model.Article
+
 	if page < 1 || pageSize < 1 {
 		pageSize = 10
 		page = 1
@@ -96,10 +97,14 @@ func (s *Articles) List(page, pageSize int) ([]model.Article, int64, error) {
 		pageSize = 50
 	}
 	query := s.db.Model(&model.Article{})
+	if keyword != "" {
+		query = query.Where("title LIKE ?", "%"+keyword+"%")
+		//query = query.Where("MATCH(title) AGAINST(?)", keyword)
+	}
 	if err := query.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := s.db.Limit(pageSize).Offset((page - 1) * pageSize).Find(&list).Error; err != nil {
+	if err := query.Limit(pageSize).Offset((page - 1) * pageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	return list, count, nil

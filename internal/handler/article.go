@@ -121,16 +121,13 @@ func (h *ArticleHandler) List(ctx *gin.Context) {
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
 		page = 1
-		response.Error(ctx, http.StatusBadRequest, http.StatusBadRequest, err.Error())
-		return
 	}
 	pageSize, err := strconv.Atoi(pageSizeStr)
 	if err != nil || pageSize < 1 {
 		pageSize = 10
-		response.Error(ctx, http.StatusBadRequest, http.StatusBadRequest, err.Error())
-		return
 	}
-	articles, total, err := h.svc.List(page, pageSize)
+	keyword := ctx.Query("keyword")
+	articles, total, err := h.svc.List(page, pageSize, keyword)
 	if err != nil {
 		response.Error(ctx, http.StatusInternalServerError, response.CodeServerError, "获取文章失败")
 		return
